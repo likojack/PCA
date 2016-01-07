@@ -81,12 +81,56 @@ function listbox1_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns listbox1 contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from listbox1
+%%get the seleected data index
 index_selected = get(hObject, 'Value');
+%%get the selected data
 h = findobj('Tag', 'Load_dataset');
 dat = get(h,'UserData');
 x = dat.x([index_selected]);
 y = dat.y([index_selected]);
+x_pos = dat.x_pos([index_selected]);
+y_pos = dat.y_pos([index_selected]);
+z_pos = dat.z_pos([index_selected]);
+Inc = dat.Inc([index_selected]);
+Dec = dat.Dec([index_selected]);
+
+%%plot first diagram
 plot(handles.axes1, x, y, '*-');
+%%plot second diagram
+bx = findobj('Tag', 'axes2');
+cla(handles.axes2,'reset');
+hold(handles.axes2,'on');
+I0=[0:15:90]';
+for i=1:numel(I0)
+    D1=[0:1:360]';
+    I1=ones(size(D1)).*I0(i);
+    XYZtick=ID2XYZ(deg2rad(I1),deg2rad(D1));
+    Stick=pmag_splot(XYZtick);
+    plot(handles.axes2, Stick(:,1),Stick(:,2),'k');
+end
+% set(bx,'box','off','visible','off');
+XYZ = [x_pos, y_pos, z_pos];
+XYZ=bsxfun(@rdivide,XYZ,sqrt(sum(XYZ.^2,2)));
+Sxy = pmag_splot(XYZ);
+plot(handles.axes2, Sxy(:,1),Sxy(:,2),'or');
+hold(handles.axes2,'off');
+
+%%plot the third diagram
+xin = [x, y, Dec, Inc];
+id0=find(xin(:,1)<16);
+id1=find(xin(:,1)>16);
+xyz=ID2XYZ(deg2rad(xin(:,4)),deg2rad(xin(:,3)));
+xyz=bsxfun(@times,xyz,xin(:,2));
+
+[coeff,score]=princomp(xyz(id1,:));
+hat=[min(score(:,1));max(score(:,1))]*coeff(:,1)';
+hat=bsxfun(@plus,hat,mean(xyz(id1,:)));
+%%project data from different directions
+cla(handles.axes3,'reset');
+plot(handles.axes3, xyz(:,2),xyz(:,1),'ok-','markerfacecolor','k');
+hold(handles.axes3,'on');
+plot(handles.axes3, xyz(:,1),-xyz(:,3),'sk-','markerfacecolor','w');
+hold(handles.axes3,'off');
 
 
 % --- Executes during object creation, after setting all properties.
@@ -133,7 +177,8 @@ z_pos = rawdata1.ZtrayC;
 
 Dec = rawdata1.Declination0x28tray0x29;
 Inc = rawdata1.Inclination0x28tray0x29;
-Dat = struct('name', name, 'x', x, 'y', y, 'Dec', Dec, 'Inc', Inc);
+
+Dat = struct('name', name, 'x', x, 'y', y, 'x_pos', x_pos, 'y_pos', y_pos, 'z_pos', z_pos, 'Inc', Inc, 'Dec', Dec);
 set(hObject, 'UserData', Dat);
 n = size(Dec);
 set(handles.listbox1,'String', x);
@@ -144,11 +189,50 @@ function Run_Callback(hObject, eventdata, handles)
 % hObject    handle to Run (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-ax = findobj('Tag', 'axes1');
+
+%%get the data info from load_dataset
 dat_h = findobj('Tag', 'Load_dataset');
 dat = get(dat_h,'UserData');
-plot(ax,dat.x,dat.y, '*-');
 
+%%plot the first diagram
+ax = findobj('Tag', 'axes1');
+plot(handles.axes1,dat.x,dat.y, '*-');
+
+%%plot the second diagram
+bx = findobj('Tag', 'axes2');
+cla(handles.axes2,'reset');
+hold(handles.axes2,'on');
+I0=[0:15:90]';
+for i=1:numel(I0)
+    D1=[0:1:360]';
+    I1=ones(size(D1)).*I0(i);
+    XYZtick=ID2XYZ(deg2rad(I1),deg2rad(D1));
+    Stick=pmag_splot(XYZtick);
+    plot(handles.axes2, Stick(:,1),Stick(:,2),'k');
+end
+set(handles.axes2,'box','off','visible','off');
+XYZ = [dat.x_pos, dat.y_pos, dat.z_pos];
+display(size(XYZ));
+XYZ=bsxfun(@rdivide,XYZ,sqrt(sum(XYZ.^2,2)));
+Sxy = pmag_splot(XYZ);
+plot(handles.axes2, Sxy(:,1),Sxy(:,2),'or');
+hold(handles.axes2,'off');
+
+%%plot the third diagram
+xin = [dat.x, dat.y, dat.Dec, dat.Inc];
+id0=find(xin(:,1)<16);
+id1=find(xin(:,1)>16);
+xyz=ID2XYZ(deg2rad(xin(:,4)),deg2rad(xin(:,3)));
+xyz=bsxfun(@times,xyz,xin(:,2));
+
+[coeff,score]=princomp(xyz(id1,:));
+hat=[min(score(:,1));max(score(:,1))]*coeff(:,1)';
+hat=bsxfun(@plus,hat,mean(xyz(id1,:)));
+%%project data from different directions
+plot(handles.axes3, xyz(:,2),xyz(:,1),'ok-','markerfacecolor','k');
+hold(handles.axes3,'on');
+plot(handles.axes3, xyz(:,1),-xyz(:,3),'sk-','markerfacecolor','w')
+hold(handles.axes3,'off');
 
 
 % --- Executes on button press in clear.
