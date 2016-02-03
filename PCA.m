@@ -22,7 +22,7 @@ function varargout = PCA(varargin)
 
 % Edit the above text to modify the response to help PCA
 
-% Last Modified by GUIDE v2.5 11-Jan-2016 09:33:06
+% Last Modified by GUIDE v2.5 03-Feb-2016 16:02:54
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -72,46 +72,92 @@ function varargout = PCA_OutputFcn(hObject, eventdata, handles)
 % Get default command line output from handles structure
 varargout{1} = handles.output;
 
-function plot_pca(xyz,hat, axes3, axes4, popup,id1)
+function plot_coord(axes3)
+xlim = get(axes3, 'xlim');
+ylim = get(axes3, 'ylim');
+plot(axes3, xlim, [0 0], '--k');
+plot(axes3, [0 0], ylim, '--k');
+
+
+function [u,mad] = plot_pca(Data, axes4, popup)
+
+xyz=ID2XYZ(deg2rad(Data.Inc),deg2rad(Data.Dec));
+xyz=bsxfun(@times,xyz,Data.y);
+x = xyz(:,1);
+y = xyz(:,2);
+z = xyz(:,3);
+[u,mad] = pmag_pca(x,y,z);
+[coeff,score]=princomp(xyz(:,:));
+
+hat=[min(score(:,1));max(score(:,1))]*coeff(:,1)';
+%hat=bsxfun(@plus,hat,mean(xyz(id1,:)));
+hat=bsxfun(@plus,hat,mean(xyz(:,:)));
+
 contents = get(popup,'String');
-content = contents{get(popup,'Value')}
+content = contents{get(popup,'Value')};
+switch content
+    case 'V vs N'
+        plot(axes4, xyz(:,2),xyz(:,1),'ok','markerfacecolor','k');
+        hold(axes4,'on');
+        plot(axes4, xyz(:,1),-xyz(:,3),'sk','markerfacecolor','w');
+        plot(axes4, hat(:,2),hat(:,1),'r','linewidth',1.5);
+        plot(axes4, hat(:,1),-hat(:,3),'r','linewidth',1.5);
+        plot_coord(axes4);
+        hold(axes4, 'off');
+    case 'V vs E'
+        plot(axes4, xyz(:,2),xyz(:,1),'ok','markerfacecolor','k');
+        hold(axes4,'on');
+        plot(axes4, xyz(:,2),-xyz(:,3),'sk','markerfacecolor','w');
+        plot(axes4, hat(:,2),hat(:,1),'r','linewidth',1.5);
+        plot(axes4, hat(:,2),-hat(:,3),'r','linewidth',1.5);
+        plot_coord(axes4);
+        hold(axes4,'off');
+     case 'V vs H'
+        plot(axes4, xyz(:,2),xyz(:,1),'ok','markerfacecolor','k');
+        hold(axes4,'on');
+        plot(axes4, sqrt(xyz(:,1).^2 + xyz(:,2).^2),-xyz(:,3),'sk','markerfacecolor','w');
+        plot(axes4, hat(:,2),hat(:,1),'r','linewidth',1.5);
+        plot(axes4, sqrt(hat(:,1).^2 + hat(:,2).^2),-hat(:,3),'r','linewidth',1.5);
+        plot_coord(axes4);
+        hold(axes4,'off');
+end
+
+
+function plot_third(dat, Dat, axes3, popup_direction)
+color_xyz = ID2XYZ(deg2rad(Dat.Inc),deg2rad(Dat.Dec));
+color_xyz = bsxfun(@times, color_xyz, Dat.y);
+
+xyz = ID2XYZ(deg2rad(dat.Inc),deg2rad(dat.Dec));
+xyz = bsxfun(@times, xyz, dat.y);
+
+contents = get(popup_direction,'String');
+content = contents{get(popup_direction,'Value')};
 switch content
     case 'V vs N'
         plot(axes3, xyz(:,2),xyz(:,1),'ok-','markerfacecolor','k');
         hold(axes3,'on');
         plot(axes3, xyz(:,1),-xyz(:,3),'sk-','markerfacecolor','w')
+        plot(axes3, color_xyz(:,2),color_xyz(:,1),'*', 'color', 'r');
+        plot(axes3, color_xyz(:,1),-color_xyz(:,3),'*', 'color', 'b');
+        plot_coord(axes3);
         hold(axes3,'off');
-
-        plot(axes4, xyz(id1,2),xyz(id1,1),'ok','markerfacecolor','k');
-        hold(axes4,'on');
-        plot(axes4, xyz(id1,1),-xyz(id1,3),'sk','markerfacecolor','w');
-        plot(axes4, hat(:,2),hat(:,1),'r','linewidth',1.5);
-        plot(axes4, hat(:,1),-hat(:,3),'r','linewidth',1.5);
-        hold(axes4, 'off');
     case 'V vs E'
         plot(axes3, xyz(:,2),xyz(:,1),'ok-','markerfacecolor','k');
         hold(axes3,'on');
-        plot(axes3, xyz(:,2),-xyz(:,3),'sk-','markerfacecolor','w')
+        plot(axes3, xyz(:,2),-xyz(:,3),'sk-','markerfacecolor','w');
+        plot(axes3, color_xyz(:,2),color_xyz(:,1),'*', 'color', 'r');
+        plot(axes3, color_xyz(:,2),-color_xyz(:,3),'*', 'color', 'b');
+        plot_coord(axes3);
+        set(axes3,'Dataaspectratio', [1 1 1]);
         hold(axes3,'off');   
-
-        plot(axes4, xyz(id1,2),xyz(id1,1),'ok','markerfacecolor','k');
-        hold(axes4,'on');
-        plot(axes4, xyz(id1,2),-xyz(id1,3),'sk','markerfacecolor','w');
-        plot(axes4, hat(:,2),hat(:,1),'r','linewidth',1.5);
-        plot(axes4, hat(:,2),-hat(:,3),'r','linewidth',1.5);
-        hold(axes4,'off');
      case 'V vs H'
         plot(axes3, xyz(:,2),xyz(:,1),'ok-','markerfacecolor','k');
         hold(axes3,'on');
         plot(axes3, sqrt(xyz(:,1).^2 + xyz(:,2).^2),-xyz(:,3),'sk-','markerfacecolor','w')
+        plot(axes3, color_xyz(:,2),color_xyz(:,1),'*', 'color', 'r');
+        plot(axes3, sqrt(color_xyz(:,1).^2 + color_xyz(:,2).^2),-color_xyz(:,3),'*', 'color', 'b');
+        plot_coord(axes3);
         hold(axes3,'off');    
-
-        plot(axes4, xyz(id1,2),xyz(id1,1),'ok','markerfacecolor','k');
-        hold(axes4,'on');
-        plot(axes4, sqrt(xyz(id1,1).^2 + xyz(id1,2).^2),-xyz(id1,3),'sk','markerfacecolor','w');
-        plot(axes4, hat(:,2),hat(:,1),'r','linewidth',1.5);
-        plot(axes4, sqrt(hat(:,1).^2 + hat(:,2).^2),-hat(:,3),'r','linewidth',1.5);
-        hold(axes4,'off');
 end
 
 function plot_first(x,y,axes1)
@@ -149,10 +195,6 @@ function listbox1_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns listbox1 contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from listbox1
-run_call = false;
-list_call = true;
-set(hObject,'UserData',list_call);
-set(handles.Run,'UserData',run_call);
 
 %%get the seleected data index
 index_selected = get(hObject, 'Value');
@@ -172,23 +214,12 @@ plot_second(Data, handles.axes2);
 
 
 %%plot the third diagram
-xin = [x, y, Dec, Inc];
-id0=find(xin(:,1)<16);
-id1=find(xin(:,1)>16);
-xyz=ID2XYZ(deg2rad(xin(:,4)),deg2rad(xin(:,3)));
-xyz=bsxfun(@times,xyz,xin(:,2));
-tmp = xyz(id1,:)
-x = tmp(:,1);
-y = tmp(:,2);
-z = tmp(:,3);
-[u,mad] = pmag_pca(x,y,z);
-[coeff,score]=princomp(xyz(id1,:));
 
-hat=[min(score(:,1));max(score(:,1))]*coeff(:,1)';
-hat=bsxfun(@plus,hat,mean(xyz(id1,:)));
+plot_third(dat, Data, handles.axes3, handles.popup_direction);
+
 
 %%project data from different directions
-plot_pca(xyz,hat, handles.axes3, handles.axes4, handles.popup_direction,id1);
+[u,mad] = plot_pca(Data, handles.axes4, handles.popup_direction);
 
 set(handles.MAD, 'String', mad);
 [I,D] = XYZ2ID(u');
@@ -207,14 +238,6 @@ function listbox1_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
-
-
-% --- Executes on button press in Bayesian.
-function Bayesian_Callback(hObject, eventdata, handles)
-% hObject    handle to Bayesian (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
 
 
 % --- Executes on button press in Load_dataset.
@@ -267,51 +290,6 @@ set(hObject, 'UserData', Dat);
 n = size(Dec);
 set(handles.listbox1,'String', x);
 
-
-% --- Executes on button press in Run.
-function Run_Callback(hObject, eventdata, handles)
-% hObject    handle to Run (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-run_call = true;
-list_call = false;
-set(hObject,'UserData',run_call);
-set(handles.listbox1,'UserData',list_call);
-
-%%get the data info from load_dataset
-dat_h = findobj('Tag', 'Load_dataset');
-dat = get(dat_h,'UserData');
-
-%%plot the first diagram
-ax = findobj('Tag', 'axes1');
-plot_first(dat.x,dat.y, handles.axes1);
-
-%%plot the second diagram
-plot_second(dat, handles.axes2);
-
-%%plot the third diagram
-xin = [dat.x, dat.y, dat.Dec, dat.Inc];
-id0=find(xin(:,1)<16);
-id1=find(xin(:,1)>16);
-xyz=ID2XYZ(deg2rad(xin(:,4)),deg2rad(xin(:,3)));
-xyz=bsxfun(@times,xyz,xin(:,2));
-tmp = xyz(id1,:)
-x = tmp(:,1);
-y = tmp(:,2);
-z = tmp(:,3);
-
-[coeff,score]=princomp(xyz(id1,:));
-
-hat=[min(score(:,1));max(score(:,1))]*coeff(:,1)';
-hat=bsxfun(@plus,hat,mean(xyz(id1,:)));
-
-%%project data from different directions
-plot_pca(xyz,hat, handles.axes3, handles.axes4, handles.popup_direction,id1);
-
-
-
 % --- Executes on button press in clear.
 function clear_Callback(hObject, eventdata, handles)
 % hObject    handle to clear (see GCBO)
@@ -321,14 +299,12 @@ set(handles.listbox1, 'String', '');
 cla(handles.axes1,'reset');
 cla(handles.axes2,'reset');
 cla(handles.axes3,'reset');
-
-
+cla(handles.axes4,'reset');
 
 function Inclination_Callback(hObject, eventdata, handles)
 % hObject    handle to Inclination (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
 % Hints: get(hObject,'String') returns contents of Inclination as text
 %        str2double(get(hObject,'String')) returns contents of Inclination as a double
 
@@ -345,13 +321,10 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
-
-
 function Declination_Callback(hObject, eventdata, handles)
 % hObject    handle to Declination (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
 % Hints: get(hObject,'String') returns contents of Declination as text
 %        str2double(get(hObject,'String')) returns contents of Declination as a double
 
@@ -402,54 +375,15 @@ function popup_direction_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from popup_direction
 
 %%decide which data source it is coming from
-run_h = findobj('Tag','Run');
-run_call = get(run_h,'UserData');
-list_h = findobj('Tag','listbox1');
-list_call = get(list_h,'UserData');
-if list_call
-    data_list = getappdata(handles.listbox1,'data');
-    plot_first(data_list.x, data_list.y, handles.axes1);
-    
-    plot_second(data_list, handles.axes2);
-    
-    xin = [data_list.x, data_list.y, data_list.Dec, data_list.Inc];
-    id0=find(xin(:,1)<16);
-    id1=find(xin(:,1)>16);
-    xyz=ID2XYZ(deg2rad(xin(:,4)),deg2rad(xin(:,3)));
-    xyz=bsxfun(@times,xyz,xin(:,2));
-    tmp = xyz(id1,:)
-    x = tmp(:,1);
-    y = tmp(:,2);
-    z = tmp(:,3);
-    [coeff,score]=princomp(xyz(id1,:));
-    hat=[min(score(:,1));max(score(:,1))]*coeff(:,1)';
-    hat=bsxfun(@plus,hat,mean(xyz(id1,:)));
-    plot_pca(xyz,hat, handles.axes3, handles.axes4, handles.popup_direction,id1);
 
-end
+data_list = getappdata(handles.listbox1,'data');
+plot_first(data_list.x, data_list.y, handles.axes1);
 
-if run_call  
-    dat_h = findobj('Tag', 'Load_dataset');
-    data_run = get(dat_h,'UserData');
-    plot_first(data_run.x, data_run.y, handles.axes1);
-    plot_second(data_run, handles.axes2);
-    
-    xin = [data_run.x, data_run.y, data_run.Dec, data_run.Inc];
-    id0=find(xin(:,1)<16);
-    id1=find(xin(:,1)>16);
-    xyz=ID2XYZ(deg2rad(xin(:,4)),deg2rad(xin(:,3)));
-    xyz=bsxfun(@times,xyz,xin(:,2));
-    tmp = xyz(id1,:)
-    x = tmp(:,1);
-    y = tmp(:,2);
-    z = tmp(:,3);
-    [coeff,score]=princomp(xyz(id1,:));
-    hat=[min(score(:,1));max(score(:,1))]*coeff(:,1)';
-    hat=bsxfun(@plus,hat,mean(xyz(id1,:)));
-    plot_pca(xyz,hat, handles.axes3, handles.axes4, handles.popup_direction,id1);
-
-end
-
+plot_second(data_list, handles.axes2);
+dat_h = findobj('Tag', 'Load_dataset');
+data_run = get(dat_h,'UserData');    
+plot_third(data_run, data_list, handles.axes3, handles.popup_direction);
+plot_pca(data_list, handles.axes4, handles.popup_direction);
 
 % --- Executes during object creation, after setting all properties.
 function popup_direction_CreateFcn(hObject, eventdata, handles)
@@ -458,6 +392,320 @@ function popup_direction_CreateFcn(hObject, eventdata, handles)
 % handles    empty - handles not created until after all CreateFcns called
 
 % Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function MAP_I_Callback(hObject, eventdata, handles)
+% hObject    handle to MAP_I (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of MAP_I as text
+%        str2double(get(hObject,'String')) returns contents of MAP_I as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function MAP_I_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to MAP_I (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function mD0_Callback(hObject, eventdata, handles)
+% hObject    handle to mD0 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of mD0 as text
+%        str2double(get(hObject,'String')) returns contents of mD0 as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function mD0_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to mD0 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function Ip1_Callback(hObject, eventdata, handles)
+% hObject    handle to Ip1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of Ip1 as text
+%        str2double(get(hObject,'String')) returns contents of Ip1 as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function Ip1_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Ip1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function MAP_D_Callback(hObject, eventdata, handles)
+% hObject    handle to MAP_D (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of MAP_D as text
+%        str2double(get(hObject,'String')) returns contents of MAP_D as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function MAP_D_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to MAP_D (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function theta_Callback(hObject, eventdata, handles)
+% hObject    handle to theta (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of theta as text
+%        str2double(get(hObject,'String')) returns contents of theta as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function theta_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to theta (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function Dp_Callback(hObject, eventdata, handles)
+% hObject    handle to Dp (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of Dp as text
+%        str2double(get(hObject,'String')) returns contents of Dp as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function Dp_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Dp (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in Bayesian.
+function Bayesian_Callback(hObject, eventdata, handles)
+% hObject    handle to Bayesian (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+%get data point structure
+data = getappdata(handles.listbox1,'data');
+xyz=ID2XYZ(deg2rad(data.Inc),deg2rad(data.Dec));
+xyz=bsxfun(@times,xyz,data.y);
+
+p = str2double(get(handles.confidence,'String'));
+data_list = getappdata(handles.listbox1,'data');
+inc = deg2rad(data_list.Inc);
+dec = deg2rad(data_list.Dec);
+XYZ = ID2XYZ(inc,dec);
+XYZ = bsxfun(@times, data_list.y,XYZ);
+
+%show up wait window and disable user input
+h = msgbox('This could be a minute. Patience');
+edithandle = findobj(h,'Style','pushbutton');
+set(edithandle,'Visible', 'off');
+set(handles.listbox1,'Enable','off');
+set(handles.Load_dataset,'Enable','off');
+set(handles.clear,'Enable','off');
+set(handles.Bayesian,'Enable','off');
+set(handles.popup_direction,'Enable','off');
+set(hObject,'Interruptible','off');
+
+
+
+[MAP_I,MAP_D,theta95,MD0,Ip,Dp,VN,VE,VH,Emu] = pmag_bpca(XYZ(:,1),XYZ(:,2),XYZ(:,3),p);
+MAP_I= deg2rad(MAP_I);
+MAP_D = deg2rad(MAP_D);
+map_xyz = ID2XYZ(MAP_I, MAP_D);
+
+min_pt = min(VN.H{1}(:,2))*map_xyz;
+max_pt = max(VN.H{1}(:,2))*map_xyz;
+hat=bsxfun(@plus,[min_pt;max_pt],Emu');
+
+%scale the VN.H line
+k1 = (hat(1,1)-hat(2,1))/(hat(1,2)-hat(2,2));
+b1 = hat(1,1)-k1*hat(1,2);
+x1_min = (min(VN.H{1}(:,2)) - b1)/k1;
+x1_max = (max(VN.H{1}(:,2)) - b1)/k1;
+
+%scale the VN.V line
+k2 = (-hat(1,3)+hat(2,3))/(hat(1,1)-hat(2,1));
+b2 = -hat(1,3)-k2*hat(1,1);
+x2_min = (min(VN.V{1}(:,2)) - b2)/k2;
+x2_max = (max(VN.V{1}(:,2)) - b2)/k2;
+
+close(h);
+set(handles.listbox1,'Enable','on');
+set(handles.Load_dataset,'Enable','on');
+set(handles.clear,'Enable','on');
+set(handles.Bayesian,'Enable','on');
+set(handles.popup_direction,'Enable','on');
+
+
+
+plot(handles.axes2, VN.H{1}(:,1), VN.H{1}(:,2),'--k');
+hold(handles.axes2,'on');
+%plot(handles.axes2,hat(:,2),hat(:,1));
+plot(handles.axes2,[x1_min;x1_max],[min(VN.H{1}(:,2));max(VN.H{1}(:,2))]);
+plot(handles.axes2,VN.H{2}(:,1), VN.H{2}(:,2),'--k');
+plot(handles.axes2,xyz(:,2),xyz(:,1),'ok','markerfacecolor','k');
+
+plot(handles.axes2,VN.V{1}(:,1), VN.V{1}(:,2),'--r');
+plot(handles.axes2,VN.V{2}(:,1), VN.V{2}(:,2),'--r');
+plot(handles.axes2,[x2_min;x2_max],[min(VN.V{1}(:,2));max(VN.V{1}(:,2))]);
+plot(handles.axes2,xyz(:,1),-xyz(:,3),'sk','markerfacecolor','w');
+plot_coord(handles.axes2);
+hold(handles.axes2,'off');
+
+set(handles.MAP_I,'String',MAP_I);
+set(handles.MAP_D,'String',MAP_D);
+set(handles.Ip1,'String',Ip(1));
+set(handles.Dp1,'String',Dp(1));
+set(handles.Ip2,'String',Ip(2));
+set(handles.Dp2,'String',Dp(2));
+set(handles.mD0,'String',MD0);
+set(handles.theta,'String',theta95);
+
+
+
+function Ip2_Callback(hObject, eventdata, handles)
+% hObject    handle to Ip2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of Ip2 as text
+%        str2double(get(hObject,'String')) returns contents of Ip2 as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function Ip2_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Ip2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function Dp1_Callback(hObject, eventdata, handles)
+% hObject    handle to Dp1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of Dp1 as text
+%        str2double(get(hObject,'String')) returns contents of Dp1 as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function Dp1_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Dp1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function Dp2_Callback(hObject, eventdata, handles)
+% hObject    handle to Dp2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of Dp2 as text
+%        str2double(get(hObject,'String')) returns contents of Dp2 as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function Dp2_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Dp2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function confidence_Callback(hObject, eventdata, handles)
+% hObject    handle to confidence (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of confidence as text
+%        str2double(get(hObject,'String')) returns contents of confidence as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function confidence_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to confidence (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
 %       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
