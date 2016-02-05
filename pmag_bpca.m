@@ -1,4 +1,4 @@
-function [MAP_I,MAP_D,theta95,MD0,Ip,Dp,VN,VE,VH,Emu] = pmag_bpca(x,y,z,p)
+function [MAP_I,MAP_D,theta95,MD0,Ip,Dp,VN,VE,VH, Emu] = pmag_bpca(x,y,z,p)
 
 q=1;
 X=[x(:)';y(:)';z(:)'];
@@ -71,8 +71,6 @@ MAP_D=rad2deg(MAP_D);
 theta95=rad2deg(agauss_inv(EW,CW,p));
 
 %% test the origin
-
-%%%Emu is expected mean(rescale at last)
 for i=1:1e4
     W1=mvnrnd(EW,eye(3)*CW);
     M1=mvnrnd(Emu,eye(3)*Cmu);
@@ -89,81 +87,25 @@ Ip=rad2deg(prctile(It,[(1-p)./2 1-(1-p)./2]*100));
 Dp=rad2deg(prctile(Dt,[(1-p)./2 1-(1-p)./2]*100));
 
 %% %% calculate XY HDI
- npts=51; % number of points along line
-% 
-xerr12=NaN(npts,1);
-xerr21=NaN(npts,1);
-yerr12=NaN(npts,1);
-yerr21=NaN(npts,1);
-xerr13=NaN(npts,1);
-xerr31=NaN(npts,1);
-zerr13=NaN(npts,1);
-zerr31=NaN(npts,1);
-% 
- EZi=linspace(min(EZ)*1.1,max(EZ)*1.1,npts); %scores along line
-for i=1:npts
-    bar=bsxfun(@plus,EZi([1 i end])'*EW,Emu');
-    [~,~,Dlim]=pmag_dplane(EW,CW,Emu,Cmu,EZi(i),p);
+npts=21; % number of points along line
+EZi=linspace(min(EZ)*1.1,max(EZ)*1.1,npts); %scores along line
+
+ for i=1:npts
+    [VNH,VNV,VEH,VEV,VHH,VHV]=pmag_dplane(EW,CW,Emu,Cmu,EZi(i),p);
     
-    pbar(1)=(bar(end,2)-bar(1,2))./(bar(end,1)-bar(1,1));
-    pbar(2)=bar(1,2)-pbar(1)*bar(1,1);
-        
-    x0=bar(2,1);
-    y0=bar(2,2);
+    VN.H{1}(i,:)=VNH(1,:).*sqrt(Dn(1));
+    VN.H{2}(i,:)=VNH(2,:).*sqrt(Dn(1));
+    VN.V{1}(i,:)=VNV(1,:).*sqrt(Dn(1));
+    VN.V{2}(i,:)=VNV(2,:).*sqrt(Dn(1));
+ 
+    VE.H{1}(i,:)=VEH(1,:).*sqrt(Dn(1));
+    VE.H{2}(i,:)=VEH(2,:).*sqrt(Dn(1));
+    VE.V{1}(i,:)=VEV(1,:).*sqrt(Dn(1));
+    VE.V{2}(i,:)=VEV(2,:).*sqrt(Dn(1));
     
-    pnorm=[-1./pbar(1) y0+x0./pbar(1)];
-    
-    xerr12(i,1)=x0+sqrt(Dlim.^2./(1+pnorm(1).^2));
-    yerr12(i,1)=pnorm(1)*xerr12(i,1)+pnorm(2);
-    xerr21(i,1)=x0-sqrt(Dlim.^2./(1+pnorm(1).^2));
-    yerr21(i,1)=pnorm(1)*xerr21(i,1)+pnorm(2);
-    
-    % calculate XZ HDI
-    pbar(1)=(bar(end,3)-bar(1,3))./(bar(end,1)-bar(1,1));
-    pbar(2)=bar(1,3)-pbar(1)*bar(1,1);
-    
-    x0=bar(2,1);
-    z0=bar(2,3);
-    pnorm=[-1./pbar(1) z0+x0./pbar(1)];
-    xerr13(i,1)=x0+sqrt(Dlim.^2./(1+pnorm(1).^2));
-    zerr13(i,1)=pnorm(1).*xerr13(i,1)+pnorm(2);
-    xerr31(i,1)=x0-sqrt(Dlim.^2./(1+pnorm(1).^2));
-    zerr31(i,1)=pnorm(1).*xerr31(i,1)+pnorm(2);
+    VH.H{1}(i,:)=VHH(1,:).*sqrt(Dn(1));
+    VH.H{2}(i,:)=VHH(2,:).*sqrt(Dn(1));
+    VH.V{1}(i,:)=VHV(1,:).*sqrt(Dn(1));
+    VH.V{2}(i,:)=VHV(2,:).*sqrt(Dn(1));    
  end
-
-x12=[xerr12;flipud(xerr21);xerr12(1)];
-y12=[yerr12;flipud(yerr21);yerr12(1)];
-x13=[xerr13;flipud(xerr31);xerr13(1)];
-z13=[zerr13;flipud(zerr31);zerr13(1)];
-
-%% rescale to original data magnitude
-bar=bar.*sqrt(Dn(1));
-x12=x12.*sqrt(Dn(1));
-y12=y12.*sqrt(Dn(1));
-x13=x13.*sqrt(Dn(1));
-z13=z13.*sqrt(Dn(1));
-
-xerr12=xerr12.*sqrt(Dn(1));
-xerr21=xerr21.*sqrt(Dn(1));
-yerr12=yerr12.*sqrt(Dn(1));
-yerr21=yerr21.*sqrt(Dn(1));
-
-xerr13=xerr13.*sqrt(Dn(1));
-xerr31=xerr31.*sqrt(Dn(1));
-zerr13=zerr13.*sqrt(Dn(1));
-zerr31=zerr31.*sqrt(Dn(1));
-
-%% package into VN outputs
-VN.H{1}=[yerr12,xerr12];
-VN.H{2}=[yerr21,xerr21];
-VN.V{1}=[xerr13,-zerr13];
-VN.V{2}=[xerr31,-zerr31];
-
-%% package into VE outputs
-VE=VN;
-
-%% package in  VH outputs
-VH=VN;
-
-
-Emu = Emu.*sqrt(Dn(1));
+ Emu = Emu.*sqrt(Dn(1));

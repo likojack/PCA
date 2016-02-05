@@ -102,6 +102,7 @@ switch content
         plot(axes4, xyz(:,1),-xyz(:,3),'sk','markerfacecolor','w');
         plot(axes4, hat(:,2),hat(:,1),'r','linewidth',1.5);
         plot(axes4, hat(:,1),-hat(:,3),'r','linewidth',1.5);
+        set(axes4,'Dataaspectratio', [1 1 1]);
         plot_coord(axes4);
         hold(axes4, 'off');
     case 'V vs E'
@@ -110,6 +111,7 @@ switch content
         plot(axes4, xyz(:,2),-xyz(:,3),'sk','markerfacecolor','w');
         plot(axes4, hat(:,2),hat(:,1),'r','linewidth',1.5);
         plot(axes4, hat(:,2),-hat(:,3),'r','linewidth',1.5);
+        set(axes4,'Dataaspectratio', [1 1 1]);
         plot_coord(axes4);
         hold(axes4,'off');
      case 'V vs H'
@@ -118,6 +120,7 @@ switch content
         plot(axes4, sqrt(xyz(:,1).^2 + xyz(:,2).^2),-xyz(:,3),'sk','markerfacecolor','w');
         plot(axes4, hat(:,2),hat(:,1),'r','linewidth',1.5);
         plot(axes4, sqrt(hat(:,1).^2 + hat(:,2).^2),-hat(:,3),'r','linewidth',1.5);
+        set(axes4,'Dataaspectratio', [1 1 1]);
         plot_coord(axes4);
         hold(axes4,'off');
 end
@@ -139,6 +142,7 @@ switch content
         plot(axes3, xyz(:,1),-xyz(:,3),'sk-','markerfacecolor','w')
         plot(axes3, color_xyz(:,2),color_xyz(:,1),'*', 'color', 'r');
         plot(axes3, color_xyz(:,1),-color_xyz(:,3),'*', 'color', 'b');
+        set(axes3,'Dataaspectratio', [1 1 1]);
         plot_coord(axes3);
         hold(axes3,'off');
     case 'V vs E'
@@ -156,6 +160,7 @@ switch content
         plot(axes3, sqrt(xyz(:,1).^2 + xyz(:,2).^2),-xyz(:,3),'sk-','markerfacecolor','w')
         plot(axes3, color_xyz(:,2),color_xyz(:,1),'*', 'color', 'r');
         plot(axes3, sqrt(color_xyz(:,1).^2 + color_xyz(:,2).^2),-color_xyz(:,3),'*', 'color', 'b');
+        set(axes3,'Dataaspectratio', [1 1 1]);
         plot_coord(axes3);
         hold(axes3,'off');    
 end
@@ -253,35 +258,35 @@ cd(filepath1);
 rawdata1 = tdfread(filename1);
 name = rawdata1.Sample;
 
-xin=[0.00 9.2830e-05 339.9 57.9
-2.50 7.5820e-05 325.7 49.1
-5.00 6.2920e-05 321.3 45.9
-10.00 5.2090e-05 314.8 41.7
-15.00 4.4550e-05 310.3 38.7
-20.00 3.9540e-05 305.0 37.0
-30.00 3.2570e-05 303.9 34.7
-40.00 2.5670e-05 303.0 32.3
-50.00 2.2520e-05 303.6 32.4
-60.00 1.9820e-05 299.8 30.8
-70.00 1.3890e-05 292.5 31.0
-80.00 1.2570e-05 297.0 25.6
-90.00 0.5030e-05 299.3 11.3];
-x = xin(:,1);
-y = xin(:,2);
-Dec = xin(:,3);
-Inc = xin(:,4);
+% xin=[0.00 9.2830e-05 339.9 57.9
+% 2.50 7.5820e-05 325.7 49.1
+% 5.00 6.2920e-05 321.3 45.9
+% 10.00 5.2090e-05 314.8 41.7
+% 15.00 4.4550e-05 310.3 38.7
+% 20.00 3.9540e-05 305.0 37.0
+% 30.00 3.2570e-05 303.9 34.7
+% 40.00 2.5670e-05 303.0 32.3
+% 50.00 2.2520e-05 303.6 32.4
+% 60.00 1.9820e-05 299.8 30.8
+% 70.00 1.3890e-05 292.5 31.0
+% 80.00 1.2570e-05 297.0 25.6
+% 90.00 0.5030e-05 299.3 11.3];
+% x = xin(:,1);
+% y = xin(:,2);
+% Dec = xin(:,3);
+% Inc = xin(:,4);
 
 %x,y here show the values of first diagram.
-% x = rawdata1.AFD0x28mT0x29;
-% y = rawdata1.Intensity0x28tray0x29;
+x = rawdata1.AFD0x28mT0x29;
+y = rawdata1.Intensity0x28tray0x29;
 
 %x_pos, y_pos, z_pos here show the position in 3d space.
-% x_pos = rawdata1.XtrayC;
-% y_pos = rawdata1.YtrayC;
-% z_pos = rawdata1.ZtrayC;
+x_pos = rawdata1.XtrayC;
+y_pos = rawdata1.YtrayC;
+z_pos = rawdata1.ZtrayC;
 
-% Dec = rawdata1.Declination0x28tray0x29;
-% Inc = rawdata1.Inclination0x28tray0x29;
+Dec = rawdata1.Declination0x28tray0x29;
+Inc = rawdata1.Inclination0x28tray0x29;
 
 % Dat = struct('name', name, 'x', x, 'y', y, 'x_pos', x_pos, 'y_pos', y_pos, 'z_pos', z_pos, 'Inc', Inc, 'Dec', Dec);
 Dat = struct('name', name, 'x', x, 'y', y,'Inc', Inc, 'Dec', Dec);
@@ -554,9 +559,7 @@ XYZ = ID2XYZ(inc,dec);
 XYZ = bsxfun(@times, data_list.y,XYZ);
 
 %show up wait window and disable user input
-h = msgbox('This could be a minute. Patience');
-edithandle = findobj(h,'Style','pushbutton');
-set(edithandle,'Visible', 'off');
+h = msgbox('This could take a while. Patience');
 set(handles.listbox1,'Enable','off');
 set(handles.Load_dataset,'Enable','off');
 set(handles.clear,'Enable','off');
@@ -587,6 +590,30 @@ b2 = -hat(1,3)-k2*hat(1,1);
 x2_min = (min(VN.V{1}(:,2)) - b2)/k2;
 x2_max = (max(VN.V{1}(:,2)) - b2)/k2;
 
+%scale VE.H line
+k3 = k1;
+b3 = b1;
+x3_min = (min(VE.H{1}(:,2)) - b3)/k3;
+x3_max = (max(VE.H{1}(:,2)) - b3)/k3;
+
+%scale VE.V line
+k4 = (-hat(1,3)+hat(2,3))/(hat(1,2)-hat(2,2));
+b4 = -hat(1,3) - k4*hat(1,2);
+x4_min = (min(VE.V{1}(:,2)) - b4)/k4;
+x4_max = (max(VE.V{1}(:,2)) - b4)/k4;
+
+%scale VH.H line
+k5 = k1;
+b5 = b1;
+x5_min = (min(VH.H{1}(:,2)) - b5)/k5;
+x5_max = (max(VH.H{1}(:,2)) - b5)/k5;
+
+%scale VH.V line
+k6 = (-hat(1,3)+hat(2,3))/(sqrt(hat(1,1).^2+hat(1,2).^2) - sqrt(hat(2,1).^2+hat(2,2).^2));
+b6 = -hat(1,3)-k6*sqrt(hat(1,1).^2+hat(1,2).^2);
+x6_min = (min(VH.V{1}(:,2)) - b6)/k6;
+x6_max = (max(VH.V{1}(:,2)) - b6)/k6;
+
 close(h);
 set(handles.listbox1,'Enable','on');
 set(handles.Load_dataset,'Enable','on');
@@ -594,21 +621,55 @@ set(handles.clear,'Enable','on');
 set(handles.Bayesian,'Enable','on');
 set(handles.popup_direction,'Enable','on');
 
+contents = get(handles.popup_direction,'String');
+content = contents{get(handles.popup_direction,'Value')};
+switch content
+    case 'V vs N'
+        plot(handles.axes4, VN.H{1}(:,1), VN.H{1}(:,2),'--k');
+        hold(handles.axes4,'on');
+        plot(handles.axes4,[x1_min;x1_max],[min(VN.H{1}(:,2));max(VN.H{1}(:,2))]);
+        plot(handles.axes4,VN.H{2}(:,1), VN.H{2}(:,2),'--k');
+        plot(handles.axes4,xyz(:,2),xyz(:,1),'ok','markerfacecolor','k');
+
+        plot(handles.axes4,VN.V{1}(:,1), VN.V{1}(:,2),'--r');
+        plot(handles.axes4,VN.V{2}(:,1), VN.V{2}(:,2),'--r');
+        plot(handles.axes4,[x2_min;x2_max],[min(VN.V{1}(:,2));max(VN.V{1}(:,2))]);
+        plot(handles.axes4,xyz(:,1),-xyz(:,3),'sk','markerfacecolor','w');
+        set(handles.axes4,'Dataaspectratio', [1 1 1]);
+        plot_coord(handles.axes4);
+        hold(handles.axes2,'off');
+    case 'V vs E'
+        plot(handles.axes4, VE.H{1}(:,1), VE.H{1}(:,2),'--k');
+        hold(handles.axes4,'on');
+        plot(handles.axes4,VE.H{2}(:,1),VE.H{2}(:,2),'--k');
+        plot(handles.axes4,[x3_min;x3_max],[min(VE.H{1}(:,2));max(VE.H{1}(:,2))]);
+        plot(handles.axes4,xyz(:,2),xyz(:,1),'ok','markerfacecolor','k');
+
+        plot(handles.axes4,VE.V{1}(:,1), VE.V{1}(:,2),'--r');
+        plot(handles.axes4,VE.V{2}(:,1), VE.V{2}(:,2),'--r');
+        plot(handles.axes4,[x4_min;x4_max],[min(VE.V{1}(:,2));max(VE.V{1}(:,2))]);
+        plot(handles.axes4,xyz(:,2),-xyz(:,3),'sk','markerfacecolor','w');
+        set(handles.axes4,'Dataaspectratio', [1 1 1]);
+        plot_coord(handles.axes4);
+        hold(handles.axes4,'off');        
+    case 'V vs H'
+        plot(handles.axes4, VH.H{1}(:,1), VH.H{1}(:,2),'--k');
+        hold(handles.axes4,'on');
+        plot(handles.axes4,VH.H{2}(:,1), VH.H{2}(:,2),'--k');
+        plot(handles.axes4,[x5_min;x5_max],[min(VN.H{1}(:,2));max(VN.H{1}(:,2))]);
+        plot(handles.axes4,xyz(:,2),xyz(:,1),'ok','markerfacecolor','k');
+        % 
+        plot(handles.axes4,VH.V{1}(:,1), VH.V{1}(:,2),'--r');
+        plot(handles.axes4,VH.V{2}(:,1), VH.V{2}(:,2),'--r');
+        plot(handles.axes4,[x6_min;x6_max],[min(VH.V{1}(:,2));max(VH.V{1}(:,2))]);
+        plot(handles.axes4, sqrt(xyz(:,1).^2 + xyz(:,2).^2),-xyz(:,3),'sk','markerfacecolor','w');
+        set(handles.axes4,'Dataaspectratio', [1 1 1]);
+        plot_coord(handles.axes4);
+        hold(handles.axes4,'off');
+
+end
 
 
-plot(handles.axes2, VN.H{1}(:,1), VN.H{1}(:,2),'--k');
-hold(handles.axes2,'on');
-%plot(handles.axes2,hat(:,2),hat(:,1));
-plot(handles.axes2,[x1_min;x1_max],[min(VN.H{1}(:,2));max(VN.H{1}(:,2))]);
-plot(handles.axes2,VN.H{2}(:,1), VN.H{2}(:,2),'--k');
-plot(handles.axes2,xyz(:,2),xyz(:,1),'ok','markerfacecolor','k');
-
-plot(handles.axes2,VN.V{1}(:,1), VN.V{1}(:,2),'--r');
-plot(handles.axes2,VN.V{2}(:,1), VN.V{2}(:,2),'--r');
-plot(handles.axes2,[x2_min;x2_max],[min(VN.V{1}(:,2));max(VN.V{1}(:,2))]);
-plot(handles.axes2,xyz(:,1),-xyz(:,3),'sk','markerfacecolor','w');
-plot_coord(handles.axes2);
-hold(handles.axes2,'off');
 
 set(handles.MAP_I,'String',MAP_I);
 set(handles.MAP_D,'String',MAP_D);
