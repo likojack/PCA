@@ -670,7 +670,7 @@ switch content
 end
 
 
-
+%display parameters
 set(handles.MAP_I,'String',MAP_I);
 set(handles.MAP_D,'String',MAP_D);
 set(handles.Ip1,'String',Ip(1));
