@@ -22,7 +22,7 @@ function varargout = PCA(varargin)
 
 % Edit the above text to modify the response to help PCA
 
-% Last Modified by GUIDE v2.5 03-Feb-2016 16:02:54
+% Last Modified by GUIDE v2.5 26-Feb-2016 09:33:24
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -54,6 +54,21 @@ function PCA_OpeningFcn(hObject, eventdata, handles, varargin)
 
 % Choose default command line output for PCA
 handles.output = hObject;
+handles.laxis = axes('parent',hObject,'units','normalized','position',[0 0 1 1],'visible','off');
+lbls = findobj(hObject,'-regexp','tag','latex_*');
+display(length(lbls));
+for i=1:length(lbls)
+      l = lbls(i);
+      % Get current text, position and tag
+      set(l,'units','normalized');
+      s = get(l,'string');
+      p = get(l,'position');
+      t = get(l,'tag');
+      % Remove the UICONTROL
+      delete(l);
+      % Replace it with a TEXT object 
+      handles.(t) = text(p(1),p(2),s,'interpreter','latex');
+end
 
 % Update handles structure
 guidata(hObject, handles);
@@ -71,6 +86,108 @@ function varargout = PCA_OutputFcn(hObject, eventdata, handles)
 
 % Get default command line output from handles structure
 varargout{1} = handles.output;
+
+
+function plot_bpca(xyz,MAP_I,MAP_D,VN,VE,VH,Emu,popup_direction,axes4)
+MAP_I= deg2rad(MAP_I);
+MAP_D = deg2rad(MAP_D);
+map_xyz = ID2XYZ(MAP_I, MAP_D);
+
+min_pt = min(VN.H{1}(:,2))*map_xyz;
+max_pt = max(VN.H{1}(:,2))*map_xyz;
+hat=bsxfun(@plus,[min_pt;max_pt],Emu');
+
+%scale the VN.H line
+siz = size(VN.H{1});
+len = siz(1);
+
+k1 = (hat(1,1)-hat(2,1))/(hat(1,2)-hat(2,2));
+b1 = hat(1,1)-k1*hat(1,2);
+x1_min = ((VN.H{1}(1,2)+VN.H{2}(1,2))/2 - b1)/k1;
+x1_max = ((VN.H{1}(len,2)+VN.H{2}(len,2))/2 - b1)/k1;
+
+%scale the VN.V line
+k2 = (-hat(1,3)+hat(2,3))/(hat(1,1)-hat(2,1));
+b2 = -hat(1,3)-k2*hat(1,1);
+x2_min = ((VN.V{1}(1,2)+VN.V{2}(1,2))/2 - b2)/k2;
+x2_max = ((VN.V{1}(len,2)+VN.V{2}(len,2))/2 - b2)/k2;
+
+%scale VE.H line
+k3 = k1;
+b3 = b1;
+x3_min = ((VE.H{1}(1,2)+VE.H{2}(1,2))/2 - b3)/k3;
+x3_max = ((VE.H{1}(len,2)+VE.H{2}(len,2))/2 - b3)/k3;
+
+%scale VE.V line
+k4 = (-hat(1,3)+hat(2,3))/(hat(1,2)-hat(2,2));
+b4 = -hat(1,3) - k4*hat(1,2);
+x4_min = ((VE.V{1}(1,2)+VE.V{2}(1,2))/2 - b4)/k4;
+x4_max = ((VE.V{1}(len,2)+VE.V{2}(len,2))/2 - b4)/k4;
+
+%scale VH.H line
+k5 = k1;
+b5 = b1;
+x5_min = ((VH.H{1}(1,2)+VH.H{2}(1,2))/2 - b5)/k5;
+x5_max = ((VH.H{1}(len,2)+VH.H{2}(len,2))/2 - b5)/k5;
+
+%scale VH.V line
+k6 = (-hat(1,3)+hat(2,3))/(sqrt(hat(1,1).^2+hat(1,2).^2) - sqrt(hat(2,1).^2+hat(2,2).^2));
+b6 = -hat(1,3)-k6*sqrt(hat(1,1).^2+hat(1,2).^2);
+x6_min = ((VH.V{1}(1,2)+VH.V{2}(1,2))/2 - b6)/k6;
+x6_max = ((VH.V{1}(len,2)+VH.V{2}(len,2))/2 - b6)/k6;
+
+
+
+contents = get(popup_direction,'String');
+content = contents{get(popup_direction,'Value')};
+switch content
+    case 'V vs N'
+        plot(axes4, VN.H{1}(:,1), VN.H{1}(:,2),'--k');
+        hold(axes4,'on');
+        plot(axes4,[x1_min;x1_max],[(VN.H{1}(1,2)+VN.H{2}(1,2))/2;(VN.H{1}(len,2)+VN.H{2}(len,2))/2]);
+        plot(axes4,VN.H{2}(:,1), VN.H{2}(:,2),'--k');
+        p1 = plot(axes4,xyz(:,2),xyz(:,1),'ok','markerfacecolor','k');
+
+        plot(axes4,VN.V{1}(:,1), VN.V{1}(:,2),'--r');
+        plot(axes4,VN.V{2}(:,1), VN.V{2}(:,2),'--r');
+        plot(axes4,[x2_min;x2_max],[(VN.V{1}(1,2)+VN.V{2}(1,2))/2;(VN.V{1}(len,2)+VN.V{2}(len,2))/2]);
+        p2 = plot(axes4,xyz(:,1),-xyz(:,3),'sk','markerfacecolor','w');
+        legend([p2,p1],'Vertical','Horizontal','location','northeastoutside');
+        set(axes4,'Dataaspectratio', [1 1 1]);
+        plot_coord(axes4);
+        hold(axes4,'off');
+    case 'V vs E'
+        plot(axes4, VE.H{1}(:,1), VE.H{1}(:,2),'--k');
+        hold(axes4,'on');
+        plot(axes4,VE.H{2}(:,1),VE.H{2}(:,2),'--k');
+        plot(axes4,[x3_min;x3_max],[(VE.H{1}(1,2)+VE.H{2}(1,2))/2;(VE.H{1}(len,2)+VE.H{2}(len,2))/2]);
+        p1 = plot(axes4,xyz(:,2),xyz(:,1),'ok','markerfacecolor','k');
+
+        plot(axes4,VE.V{1}(:,1), VE.V{1}(:,2),'--r');
+        plot(axes4,VE.V{2}(:,1), VE.V{2}(:,2),'--r');
+        plot(axes4,[x4_min;x4_max],[(VE.V{1}(1,2)+VE.V{2}(1,2))/2;(VE.V{1}(len,2)+VE.V{2}(len,2))/2]);
+        p2 = plot(axes4,xyz(:,2),-xyz(:,3),'sk','markerfacecolor','w');
+        legend([p2,p1],'Vertical','Horizontal','location','northeastoutside');
+        set(axes4,'Dataaspectratio', [1 1 1]);
+        plot_coord(axes4);
+        hold(axes4,'off');        
+    case 'V vs H'
+        plot(axes4, VH.H{1}(:,1), VH.H{1}(:,2),'--k');
+        hold(axes4,'on');
+        plot(axes4,VH.H{2}(:,1), VH.H{2}(:,2),'--k');
+        plot(axes4,[x5_min;x5_max],[(VH.H{1}(1,2)+VH.H{2}(1,2))/2;(VH.H{1}(len,2)+VH.H{2}(len,2))/2]);
+        p1 = plot(axes4,xyz(:,2),xyz(:,1),'ok','markerfacecolor','k');
+        % 
+        plot(axes4,VH.V{1}(:,1), VH.V{1}(:,2),'--r');
+        plot(axes4,VH.V{2}(:,1), VH.V{2}(:,2),'--r');
+        plot(axes4,[x6_min;x6_max],[(VH.V{1}(1,2)+VH.V{2}(1,2))/2;(VH.V{1}(len,2)+VH.V{2}(len,2))/2]);
+        p2 = plot(axes4, sqrt(xyz(:,1).^2 + xyz(:,2).^2),-xyz(:,3),'sk','markerfacecolor','w');
+        legend([p2,p1],'Vertical','Horizontal','location','northeastoutside');
+        set(axes4,'Dataaspectratio', [1 1 1]);
+        plot_coord(axes4);
+        hold(axes4,'off');
+
+end
 
 function plot_coord(axes3)
 xlim = get(axes3, 'xlim');
@@ -97,27 +214,30 @@ contents = get(popup,'String');
 content = contents{get(popup,'Value')};
 switch content
     case 'V vs N'
-        plot(axes4, xyz(:,2),xyz(:,1),'ok','markerfacecolor','k');
+        p1 = plot(axes4, xyz(:,2),xyz(:,1),'ok','markerfacecolor','k');
         hold(axes4,'on');
-        plot(axes4, xyz(:,1),-xyz(:,3),'sk','markerfacecolor','w');
+        p2 = plot(axes4, xyz(:,1),-xyz(:,3),'sk','markerfacecolor','w');
+        legend([p2,p1],'Vertical','Horizontal','location','northeastoutside');
         plot(axes4, hat(:,2),hat(:,1),'r','linewidth',1.5);
         plot(axes4, hat(:,1),-hat(:,3),'r','linewidth',1.5);
         set(axes4,'Dataaspectratio', [1 1 1]);
         plot_coord(axes4);
         hold(axes4, 'off');
     case 'V vs E'
-        plot(axes4, xyz(:,2),xyz(:,1),'ok','markerfacecolor','k');
+        p1 = plot(axes4, xyz(:,2),xyz(:,1),'ok','markerfacecolor','k');
         hold(axes4,'on');
-        plot(axes4, xyz(:,2),-xyz(:,3),'sk','markerfacecolor','w');
+        p2 = plot(axes4, xyz(:,2),-xyz(:,3),'sk','markerfacecolor','w');
+        legend([p2,p1],'Vertical','Horizontal','location','northeastoutside');
         plot(axes4, hat(:,2),hat(:,1),'r','linewidth',1.5);
         plot(axes4, hat(:,2),-hat(:,3),'r','linewidth',1.5);
         set(axes4,'Dataaspectratio', [1 1 1]);
         plot_coord(axes4);
         hold(axes4,'off');
      case 'V vs H'
-        plot(axes4, xyz(:,2),xyz(:,1),'ok','markerfacecolor','k');
+        p1 = plot(axes4, xyz(:,2),xyz(:,1),'ok','markerfacecolor','k');
         hold(axes4,'on');
-        plot(axes4, sqrt(xyz(:,1).^2 + xyz(:,2).^2),-xyz(:,3),'sk','markerfacecolor','w');
+        p2 = plot(axes4, sqrt(xyz(:,1).^2 + xyz(:,2).^2),-xyz(:,3),'sk','markerfacecolor','w');
+        legend([p2,p1],'Vertical','Horizontal','location','northeastoutside');
         plot(axes4, hat(:,2),hat(:,1),'r','linewidth',1.5);
         plot(axes4, sqrt(hat(:,1).^2 + hat(:,2).^2),-hat(:,3),'r','linewidth',1.5);
         set(axes4,'Dataaspectratio', [1 1 1]);
@@ -137,27 +257,31 @@ contents = get(popup_direction,'String');
 content = contents{get(popup_direction,'Value')};
 switch content
     case 'V vs N'
-        plot(axes3, xyz(:,2),xyz(:,1),'ok-','markerfacecolor','k');
+        p1 = plot(axes3, xyz(:,2),xyz(:,1),'ok-','markerfacecolor','k');
         hold(axes3,'on');
-        plot(axes3, xyz(:,1),-xyz(:,3),'sk-','markerfacecolor','w')
+        p2 = plot(axes3, xyz(:,1),-xyz(:,3),'sk-','markerfacecolor','w');
+        legend([p2,p1],'Vertical','Horizontal','location','northeastoutside');
         plot(axes3, color_xyz(:,2),color_xyz(:,1),'*', 'color', 'r');
         plot(axes3, color_xyz(:,1),-color_xyz(:,3),'*', 'color', 'b');
-        set(axes3,'Dataaspectratio', [1 1 1]);
+        
+%         set(axes3,'Dataaspectratio', [1 1 1]);
         plot_coord(axes3);
         hold(axes3,'off');
     case 'V vs E'
-        plot(axes3, xyz(:,2),xyz(:,1),'ok-','markerfacecolor','k');
+        p1 = plot(axes3, xyz(:,2),xyz(:,1),'ok-','markerfacecolor','k');
         hold(axes3,'on');
-        plot(axes3, xyz(:,2),-xyz(:,3),'sk-','markerfacecolor','w');
+        p2 = plot(axes3, xyz(:,2),-xyz(:,3),'sk-','markerfacecolor','w');
+        legend([p2,p1],'Vertical','Horizontal','location','northeastoutside');
         plot(axes3, color_xyz(:,2),color_xyz(:,1),'*', 'color', 'r');
         plot(axes3, color_xyz(:,2),-color_xyz(:,3),'*', 'color', 'b');
         plot_coord(axes3);
         set(axes3,'Dataaspectratio', [1 1 1]);
         hold(axes3,'off');   
      case 'V vs H'
-        plot(axes3, xyz(:,2),xyz(:,1),'ok-','markerfacecolor','k');
+        p1 = plot(axes3, xyz(:,2),xyz(:,1),'ok-','markerfacecolor','k');
         hold(axes3,'on');
-        plot(axes3, sqrt(xyz(:,1).^2 + xyz(:,2).^2),-xyz(:,3),'sk-','markerfacecolor','w')
+        p2 = plot(axes3, sqrt(xyz(:,1).^2 + xyz(:,2).^2),-xyz(:,3),'sk-','markerfacecolor','w');
+        legend([p2,p1],'Vertical','Horizontal','location','northeastoutside');
         plot(axes3, color_xyz(:,2),color_xyz(:,1),'*', 'color', 'r');
         plot(axes3, sqrt(color_xyz(:,1).^2 + color_xyz(:,2).^2),-color_xyz(:,3),'*', 'color', 'b');
         set(axes3,'Dataaspectratio', [1 1 1]);
@@ -180,7 +304,17 @@ for i=1:numel(I0)
     XYZtick=ID2XYZ(deg2rad(I1),deg2rad(D1));
     Stick=pmag_splot(XYZtick);
     plot(axes2, Stick(:,1),Stick(:,2),'k');
+    if i == 1
+        plot(axes2, [-0.5;0.5],[-sqrt(3)/2;sqrt(3)/2],'k');
+        plot(axes2, [-sqrt(3)/2;sqrt(3)/2],[-0.5;0.5],'k');
+        plot(axes2, [-1;1],[0;0],'k');
+        plot(axes2, [-sqrt(3)/2;sqrt(3)/2],[0.5;-0.5],'k');
+        plot(axes2, [-0.5;0.5],[sqrt(3)/2;-sqrt(3)/2],'k');
+        plot(axes2, [0;0],[-1;1],'k');
+    end
 end
+
+
 set(axes2,'box','off','visible','off');
 XYZ = ID2XYZ(dat.Inc, dat.Dec);
 XYZ = bsxfun(@times, dat.y,XYZ);
@@ -202,7 +336,8 @@ function listbox1_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from listbox1
 
 %%get the seleected data index
-index_selected = get(hObject, 'Value');
+setappdata(handles.Load_dataset,'bayesian',false); %Load_dataset.bayesian to decide whether BPCA is being used.
+index_selected = get(hObject, 'Value'); 
 %%get the selected data
 h = findobj('Tag', 'Load_dataset');
 dat = get(h,'UserData');
@@ -226,10 +361,10 @@ plot_third(dat, Data, handles.axes3, handles.popup_direction);
 %%project data from different directions
 [u,mad] = plot_pca(Data, handles.axes4, handles.popup_direction);
 
-set(handles.MAD, 'String', mad);
+set(handles.MAD, 'String', floor(mad*100)/100);
 [I,D] = XYZ2ID(u');
-set(handles.Inclination, 'String' ,rad2deg(I));
-set(handles.Declination, 'String', rad2deg(D));
+set(handles.Inclination, 'String' ,floor(rad2deg(I)*100)/100); %only display 2 digits on the right of decimal
+set(handles.Declination, 'String', ceil(rad2deg(D)*100)/100);
 
 
 % --- Executes during object creation, after setting all properties.
@@ -252,8 +387,10 @@ function Load_dataset_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 %%load data here, what data format?
+
+
 [filename1,filepath1]=uigetfile({'*.*','All Files'},...
-  'Select Data File 1');
+  'Select Data File');
 cd(filepath1);
 rawdata1 = tdfread(filename1);
 name = rawdata1.Sample;
@@ -276,35 +413,35 @@ name = rawdata1.Sample;
 % Dec = xin(:,3);
 % Inc = xin(:,4);
 
-%x,y here show the values of first diagram.
 x = rawdata1.AFD0x28mT0x29;
 y = rawdata1.Intensity0x28tray0x29;
 
-%x_pos, y_pos, z_pos here show the position in 3d space.
-x_pos = rawdata1.XtrayC;
-y_pos = rawdata1.YtrayC;
-z_pos = rawdata1.ZtrayC;
 
 Dec = rawdata1.Declination0x28tray0x29;
 Inc = rawdata1.Inclination0x28tray0x29;
 
-% Dat = struct('name', name, 'x', x, 'y', y, 'x_pos', x_pos, 'y_pos', y_pos, 'z_pos', z_pos, 'Inc', Inc, 'Dec', Dec);
 Dat = struct('name', name, 'x', x, 'y', y,'Inc', Inc, 'Dec', Dec);
 
-set(hObject, 'UserData', Dat);
+set(hObject, 'UserData', Dat); %this Load_dataset.userdata will be the data input
 n = size(Dec);
 set(handles.listbox1,'String', x);
+set(handles.sampleID,'String',name(1,:));
+setappdata(hObject,'sampleID',name(1,:));
 
 % --- Executes on button press in clear.
 function clear_Callback(hObject, eventdata, handles)
 % hObject    handle to clear (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+%reset everything
 set(handles.listbox1, 'String', '');
 cla(handles.axes1,'reset');
 cla(handles.axes2,'reset');
 cla(handles.axes3,'reset');
 cla(handles.axes4,'reset');
+set(handles.Load_dataset, 'UserData', []);
+setappdata(handles.listbox1, 'data', []);
+setappdata(hObject, 'bayesian',false);
 
 function Inclination_Callback(hObject, eventdata, handles)
 % hObject    handle to Inclination (see GCBO)
@@ -381,14 +518,29 @@ function popup_direction_Callback(hObject, eventdata, handles)
 
 %%decide which data source it is coming from
 
-data_list = getappdata(handles.listbox1,'data');
+data_list = getappdata(handles.listbox1,'data'); % get the selected data from listbox1
 plot_first(data_list.x, data_list.y, handles.axes1);
 
 plot_second(data_list, handles.axes2);
 dat_h = findobj('Tag', 'Load_dataset');
-data_run = get(dat_h,'UserData');    
+data_run = get(dat_h,'UserData');     % get the data input from Load_dataset
 plot_third(data_run, data_list, handles.axes3, handles.popup_direction);
-plot_pca(data_list, handles.axes4, handles.popup_direction);
+bayesian = getappdata(handles.Load_dataset, 'bayesian');
+if bayesian == false    
+    plot_pca(data_list, handles.axes4, handles.popup_direction);
+else
+    % get the prameter for plotting BPCA diagram from bayesian, rather than go through BPCA algorithm again
+    MAP_I = getappdata(handles.Bayesian,'MAP_I');
+    MAP_D = getappdata(handles.Bayesian,'MAP_D');
+    theta95 = getappdata(handles.Bayesian,'theta95');
+    MD0 = getappdata(handles.Bayesian,'MD0');
+    VN = getappdata(handles.Bayesian,'VN');
+    VE = getappdata(handles.Bayesian,'VE');
+    VH = getappdata(handles.Bayesian,'VH');
+    Emu = getappdata(handles.Bayesian,'Emu');
+    xyz = getappdata(handles.Bayesian,'xyz');
+    plot_bpca(xyz,MAP_I,MAP_D,VN,VE,VH,Emu,handles.popup_direction,handles.axes4);
+end
 
 % --- Executes during object creation, after setting all properties.
 function popup_direction_CreateFcn(hObject, eventdata, handles)
@@ -548,10 +700,25 @@ function Bayesian_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 %get data point structure
 data = getappdata(handles.listbox1,'data');
+try
+    x = data.x;
+catch
+    ed = errordlg('there must be at least two data point as input', 'Error');
+    set(ed, 'WindowStyle', 'modal');
+    uiwait(ed);    
+end
+
+setappdata(handles.Load_dataset,'bayesian',true);
 xyz=ID2XYZ(deg2rad(data.Inc),deg2rad(data.Dec));
 xyz=bsxfun(@times,xyz,data.y);
-
 p = str2double(get(handles.confidence,'String'));
+if p>=1 | p<=0 | isnan(p)
+    ed = errordlg('confidence range is between 0 and 1', 'Error');
+    set(ed, 'WindowStyle', 'modal');
+    uiwait(ed);
+else
+
+
 data_list = getappdata(handles.listbox1,'data');
 inc = deg2rad(data_list.Inc);
 dec = deg2rad(data_list.Dec);
@@ -568,51 +735,29 @@ set(handles.popup_direction,'Enable','off');
 set(hObject,'Interruptible','off');
 
 
-
 [MAP_I,MAP_D,theta95,MD0,Ip,Dp,VN,VE,VH,Emu] = pmag_bpca(XYZ(:,1),XYZ(:,2),XYZ(:,3),p);
-MAP_I= deg2rad(MAP_I);
-MAP_D = deg2rad(MAP_D);
-map_xyz = ID2XYZ(MAP_I, MAP_D);
 
-min_pt = min(VN.H{1}(:,2))*map_xyz;
-max_pt = max(VN.H{1}(:,2))*map_xyz;
-hat=bsxfun(@plus,[min_pt;max_pt],Emu');
+plot_bpca(xyz,MAP_I,MAP_D,VN,VE,VH,Emu,handles.popup_direction,handles.axes4);
+setappdata(hObject,'MAP_I',MAP_I);
+setappdata(hObject,'MAP_D',MAP_D);
+setappdata(hObject,'theta95',theta95);
+setappdata(hObject,'MD0',MD0);
+setappdata(hObject,'VN',VN);
+setappdata(hObject,'VE',VE);
+setappdata(hObject,'VH',VH);
+setappdata(hObject,'Emu',Emu);
+setappdata(hObject,'xyz',xyz);
 
-%scale the VN.H line
-k1 = (hat(1,1)-hat(2,1))/(hat(1,2)-hat(2,2));
-b1 = hat(1,1)-k1*hat(1,2);
-x1_min = (min(VN.H{1}(:,2)) - b1)/k1;
-x1_max = (max(VN.H{1}(:,2)) - b1)/k1;
+%display parameters
 
-%scale the VN.V line
-k2 = (-hat(1,3)+hat(2,3))/(hat(1,1)-hat(2,1));
-b2 = -hat(1,3)-k2*hat(1,1);
-x2_min = (min(VN.V{1}(:,2)) - b2)/k2;
-x2_max = (max(VN.V{1}(:,2)) - b2)/k2;
-
-%scale VE.H line
-k3 = k1;
-b3 = b1;
-x3_min = (min(VE.H{1}(:,2)) - b3)/k3;
-x3_max = (max(VE.H{1}(:,2)) - b3)/k3;
-
-%scale VE.V line
-k4 = (-hat(1,3)+hat(2,3))/(hat(1,2)-hat(2,2));
-b4 = -hat(1,3) - k4*hat(1,2);
-x4_min = (min(VE.V{1}(:,2)) - b4)/k4;
-x4_max = (max(VE.V{1}(:,2)) - b4)/k4;
-
-%scale VH.H line
-k5 = k1;
-b5 = b1;
-x5_min = (min(VH.H{1}(:,2)) - b5)/k5;
-x5_max = (max(VH.H{1}(:,2)) - b5)/k5;
-
-%scale VH.V line
-k6 = (-hat(1,3)+hat(2,3))/(sqrt(hat(1,1).^2+hat(1,2).^2) - sqrt(hat(2,1).^2+hat(2,2).^2));
-b6 = -hat(1,3)-k6*sqrt(hat(1,1).^2+hat(1,2).^2);
-x6_min = (min(VH.V{1}(:,2)) - b6)/k6;
-x6_max = (max(VH.V{1}(:,2)) - b6)/k6;
+set(handles.MAP_I,'String',floor(MAP_I*100)/100);
+set(handles.MAP_D,'String',floor(MAP_D*100)/100);
+set(handles.Ip1,'String',floor(Ip(1)*100)/100);
+set(handles.Dp1,'String',floor(Dp(1)*100)/100);
+set(handles.Ip2,'String',floor(Ip(2)*100)/100);
+set(handles.Dp2,'String',floor(Dp(2)*100)/100);
+set(handles.mD0,'String',floor(MD0*100)/100);
+set(handles.theta,'String',floor(theta95*100)/100);
 
 close(h);
 set(handles.listbox1,'Enable','on');
@@ -621,64 +766,7 @@ set(handles.clear,'Enable','on');
 set(handles.Bayesian,'Enable','on');
 set(handles.popup_direction,'Enable','on');
 
-contents = get(handles.popup_direction,'String');
-content = contents{get(handles.popup_direction,'Value')};
-switch content
-    case 'V vs N'
-        plot(handles.axes4, VN.H{1}(:,1), VN.H{1}(:,2),'--k');
-        hold(handles.axes4,'on');
-        plot(handles.axes4,[x1_min;x1_max],[min(VN.H{1}(:,2));max(VN.H{1}(:,2))]);
-        plot(handles.axes4,VN.H{2}(:,1), VN.H{2}(:,2),'--k');
-        plot(handles.axes4,xyz(:,2),xyz(:,1),'ok','markerfacecolor','k');
-
-        plot(handles.axes4,VN.V{1}(:,1), VN.V{1}(:,2),'--r');
-        plot(handles.axes4,VN.V{2}(:,1), VN.V{2}(:,2),'--r');
-        plot(handles.axes4,[x2_min;x2_max],[min(VN.V{1}(:,2));max(VN.V{1}(:,2))]);
-        plot(handles.axes4,xyz(:,1),-xyz(:,3),'sk','markerfacecolor','w');
-        set(handles.axes4,'Dataaspectratio', [1 1 1]);
-        plot_coord(handles.axes4);
-        hold(handles.axes2,'off');
-    case 'V vs E'
-        plot(handles.axes4, VE.H{1}(:,1), VE.H{1}(:,2),'--k');
-        hold(handles.axes4,'on');
-        plot(handles.axes4,VE.H{2}(:,1),VE.H{2}(:,2),'--k');
-        plot(handles.axes4,[x3_min;x3_max],[min(VE.H{1}(:,2));max(VE.H{1}(:,2))]);
-        plot(handles.axes4,xyz(:,2),xyz(:,1),'ok','markerfacecolor','k');
-
-        plot(handles.axes4,VE.V{1}(:,1), VE.V{1}(:,2),'--r');
-        plot(handles.axes4,VE.V{2}(:,1), VE.V{2}(:,2),'--r');
-        plot(handles.axes4,[x4_min;x4_max],[min(VE.V{1}(:,2));max(VE.V{1}(:,2))]);
-        plot(handles.axes4,xyz(:,2),-xyz(:,3),'sk','markerfacecolor','w');
-        set(handles.axes4,'Dataaspectratio', [1 1 1]);
-        plot_coord(handles.axes4);
-        hold(handles.axes4,'off');        
-    case 'V vs H'
-        plot(handles.axes4, VH.H{1}(:,1), VH.H{1}(:,2),'--k');
-        hold(handles.axes4,'on');
-        plot(handles.axes4,VH.H{2}(:,1), VH.H{2}(:,2),'--k');
-        plot(handles.axes4,[x5_min;x5_max],[min(VN.H{1}(:,2));max(VN.H{1}(:,2))]);
-        plot(handles.axes4,xyz(:,2),xyz(:,1),'ok','markerfacecolor','k');
-        % 
-        plot(handles.axes4,VH.V{1}(:,1), VH.V{1}(:,2),'--r');
-        plot(handles.axes4,VH.V{2}(:,1), VH.V{2}(:,2),'--r');
-        plot(handles.axes4,[x6_min;x6_max],[min(VH.V{1}(:,2));max(VH.V{1}(:,2))]);
-        plot(handles.axes4, sqrt(xyz(:,1).^2 + xyz(:,2).^2),-xyz(:,3),'sk','markerfacecolor','w');
-        set(handles.axes4,'Dataaspectratio', [1 1 1]);
-        plot_coord(handles.axes4);
-        hold(handles.axes4,'off');
-
 end
-
-
-%display parameters
-set(handles.MAP_I,'String',MAP_I);
-set(handles.MAP_D,'String',MAP_D);
-set(handles.Ip1,'String',Ip(1));
-set(handles.Dp1,'String',Dp(1));
-set(handles.Ip2,'String',Ip(2));
-set(handles.Dp2,'String',Dp(2));
-set(handles.mD0,'String',MD0);
-set(handles.theta,'String',theta95);
 
 
 
@@ -770,4 +858,90 @@ function confidence_CreateFcn(hObject, eventdata, handles)
 %       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in output.
+function output_Callback(hObject, eventdata, handles)
+% hObject    handle to output (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+[filename, pathname] = uiputfile('*.csv', 'Save output as');
+setappdata(handles.append_to_output,'filename',filename);
+setappdata(handles.append_to_output,'pathname',pathname);
+header0 = 'SampleID';
+header1 = 'PCA_I';
+header2 = 'PCA_D';
+header3 = 'MAD';
+header4 = 'MAP_I';
+header5 = 'MAP_D';
+header6 = 'MD0';
+header7 = 'theta';
+header8 = 'I_p1';
+header9 = 'I_p2';
+header10 = 'D_p1';
+header11 = 'D_p2';
+header12 = 'confidence';
+fid = fopen(strcat(pathname,filename),'w');
+PCA_I = str2double(get(handles.Inclination,'String'));
+PCA_D = str2double(get(handles.Declination,'String'));
+MAD = str2double(get(handles.MAD,'String'));
+sampleID = getappdata(handles.Load_dataset,'sampleID');
+bayesian = getappdata(handles.Load_dataset,'bayesian');
+if bayesian == false
+    fprintf(fid, [header0 ',' header1 ',' header2 ',' header3 ',' header4 ',' header5 ',' header6 ',' header7 ',' header8 ',' header9 ',' header10 ',' header11 ',' header12 '\n']);
+    fprintf(fid, '%s,%.2f,%.2f,%.2f,%s,%s,%s,%s,%s,%s,%s,%s,%s\n', sampleID,PCA_I, PCA_D, MAD, 'NA', 'NA', 'NA', 'NA', 'NA', 'NA', 'NA', 'NA','NA');
+    fclose(fid);
+
+else
+    MAP_I = str2double(get(handles.MAP_I,'String'));
+    MAP_D = str2double(get(handles.MAP_D,'String'));
+    mD0 = str2double(get(handles.mD0,'String'));
+    theta = str2double(get (handles.theta,'String'));
+    Ip1 = str2double(get(handles.Ip1,'String'));
+    Ip2 = str2double(get(handles.Ip2,'String'));
+    Dp1 = str2double(get(handles.Dp1,'String'));
+    Dp2 = str2double(get(handles.Dp2,'String'));
+    confidence = str2double(get(handles.confidence,'String'));
+    fprintf(fid, [header0 ',' header1 ',' header2 ',' header3 ',' header4 ',' header5 ',' header6 ',' header7 ',' header8 ',' header9 ',' header10 ',' header11 ',' header12 '\n']);
+    fprintf(fid, '%s,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\n', sampleID,PCA_I, PCA_D, MAD, MAP_I,MAP_D, mD0, theta, Ip1, Ip2, Dp1, Dp2,confidence);
+    fclose(fid);
+end
+
+% --- Executes on button press in append_to_output.
+function append_to_output_Callback(hObject, eventdata, handles)
+% hObject    handle to append_to_output (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+filename = getappdata(hObject,'filename');
+pathname = getappdata(hObject,'pathname');
+if ~exist(strcat(pathname,filename),'file')
+    ed = errordlg('press Output to select output file first', 'Error');
+    set(ed, 'WindowStyle', 'modal');
+    uiwait(ed); 
+end
+    
+
+fid = fopen(strcat(pathname,filename),'a');
+PCA_I = str2double(get(handles.Inclination,'String'));
+PCA_D = str2double(get(handles.Declination,'String'));
+MAD = str2double(get(handles.MAD,'String'));
+sampleID = getappdata(handles.Load_dataset,'sampleID');
+bayesian = getappdata(handles.Load_dataset,'bayesian');
+if bayesian == false
+    fprintf(fid, '%s,%.2f,%.2f,%.2f,%s,%s,%s,%s,%s,%s,%s,%s,%s\n', sampleID,PCA_I, PCA_D, MAD, 'NA', 'NA', 'NA', 'NA', 'NA', 'NA', 'NA', 'NA','NA');
+    fclose(fid);
+else
+    MAP_I = str2double(get(handles.MAP_I,'String'));
+    MAP_D = str2double(get(handles.MAP_D,'String'));
+    mD0 = str2double(get(handles.mD0,'String'));
+    theta = str2double(get(handles.theta,'String'));
+    Ip1 = str2double(get(handles.Ip1,'String'));
+    Ip2 = str2double(get(handles.Ip2,'String'));
+    Dp1 = str2double(get(handles.Dp1,'String'));
+    Dp2 = str2double(get(handles.Dp2,'String'));
+    confidence = str2double(get(handles.confidence,'String'));
+    fprintf(fid, '%s,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\n', sampleID,PCA_I, PCA_D, MAD, MAP_I,MAP_D, mD0, theta, Ip1, Ip2, Dp1, Dp2,confidence);
+    fclose(fid);
 end
